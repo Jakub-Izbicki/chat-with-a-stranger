@@ -1,5 +1,7 @@
 <template>
-  <div>hello world {{ getRandom() }}</div>
+  <div>
+    <p>hello world {{ getRandom() }}</p>
+  </div>
 </template>
 
 <script lang="ts">
