@@ -17,9 +17,11 @@ app.use(express.json());
 app.use(express.urlencoded({extended: true}));
 app.use(cookieParser());
 
-// Security
 if (process.env.NODE_ENV === 'production') {
     app.use(helmet());
+    app.use(express.static(__dirname + "/public/"));
+    app.get(/.*/, (request, response) =>
+        response.sendFile(__dirname + "/public/index.html"));
 } else {
     app.use(morgan('dev'));
     app.use(cors());

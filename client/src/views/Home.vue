@@ -21,7 +21,7 @@ export default class Home extends Vue {
     setInterval(() => {
       axios.get("/api/status")
           .then((response) => {
-            this.serverStatus = response?.data?.status ? response?.data?.status : response.status;
+            this.serverStatus = `${response.status}`;
             this.updateTick();
           });
     }, 1000);
