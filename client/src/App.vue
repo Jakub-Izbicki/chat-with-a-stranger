@@ -30,8 +30,6 @@ html {
 
 body {
   @apply min-h-full flex flex-col flex-shrink-0;
-  //background: rgb(157, 141, 87);
-  //background: linear-gradient(45deg, rgba(157, 141, 87, 1) 20%, rgba(168, 124, 141, 1) 40%, rgba(162, 105, 105, 1) 100%);
 }
 
 #app {

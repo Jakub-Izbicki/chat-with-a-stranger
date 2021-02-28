@@ -13,15 +13,14 @@ import axios from "axios";
 @Component
 export default class Home extends Vue {
 
-  private serverStatus = ">";
+  private serverStatus = "?";
 
   private tick = "/";
 
   mounted() {
     setInterval(() => {
-      axios.get("http://localhost:3000/api/status")
+      axios.get("/api/status")
           .then((response) => {
-            console.info(response);
             this.serverStatus = response?.data?.status ? response?.data?.status : response.status;
             this.updateTick();
           });
