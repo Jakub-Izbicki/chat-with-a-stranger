@@ -2,9 +2,8 @@
   "name": "chatwithastranger-server",
   "version": "0.0.0",
   "scripts": {
-    "build": "ts-node build.ts",
     "lint": "eslint . --ext .ts",
-    "start": "node -r module-alias/register ./dist --env=production",
+    "start": "ts-node build.ts && node -r module-alias/register ./dist --env=production",
     "serve": "nodemon"
   },
   "nodemonConfig": {

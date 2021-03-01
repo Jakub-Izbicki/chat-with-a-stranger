@@ -1,0 +1,11 @@
+{
+  "name": "chatwithastranger-boot",
+  "version": "0.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "npm run build --prefix ./client && npm run start --prefix ./server"
+  },
+  "author": "",
+  "license": "ISC"
+}

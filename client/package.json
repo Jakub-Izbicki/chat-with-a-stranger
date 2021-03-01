@@ -1,12 +1,11 @@
 {
   "name": "chatwithastranger",
-  "version": "0.1.0",
+  "version": "0.0.0",
   "private": true,
   "scripts": {
     "serve": "vue-cli-service serve",
     "build": "vue-cli-service build",
-    "lint": "vue-cli-service lint",
-    "deployInt": "npm run build & firebase deploy"
+    "lint": "vue-cli-service lint"
   },
   "dependencies": {
     "@tailwindcss/postcss7-compat": "^2.0.2",

@@ -6,6 +6,8 @@ client/dist
 
 # server
 server/node_modules
+server/dist
+server/jet-logger.log
 
 # local env files
 .env.local
