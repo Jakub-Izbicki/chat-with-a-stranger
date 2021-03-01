@@ -1,19 +1,21 @@
 <template>
   <div>
-    <p>hello world {{ getRandom() }}</p>
-    <p>Server status: {{ `${serverStatus} ${tick}` }}</p>
+    <p>Server status: {{ serverStatus }}</p>
+    <p>Server env: {{ serverEnv }}</p>
+    <p>{{ tick }}</p>
   </div>
 </template>
 
 <script lang="ts">
 import {Component, Vue} from "vue-property-decorator";
-import {v4 as uuid} from "uuid"
 import axios from "axios";
 
 @Component
 export default class Home extends Vue {
 
   private serverStatus = "?";
+
+  private serverEnv = "?";
 
   private tick = "/";
 
@@ -22,6 +24,7 @@ export default class Home extends Vue {
       axios.get("/api/status")
           .then((response) => {
             this.serverStatus = `${response.status}`;
+            this.serverEnv = `${response.data.env}`;
             this.updateTick();
           });
     }, 1000);
@@ -33,10 +36,6 @@ export default class Home extends Vue {
     } else {
       this.tick = "/";
     }
-  }
-
-  private getRandom(): string {
-    return uuid();
   }
 }
 </script>

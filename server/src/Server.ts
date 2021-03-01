@@ -20,7 +20,7 @@ app.use(cookieParser());
 if (process.env.NODE_ENV === 'production') {
     app.use(helmet());
     app.use(express.static(__dirname + "/public/"));
-    app.get(/.*/, (request, response) =>
+    app.get(/^(?!\/api\/).*$/, (request, response) =>
         response.sendFile(__dirname + "/public/index.html"));
 } else {
     app.use(morgan('dev'));
