@@ -32,3 +32,7 @@ Everything runs on `localhost:3000`.
 
 1. Commit all changes to git,
 2. `npm run heroku:deploy`
+
+### Logs:
+
+1. `heroku logs --tail`
