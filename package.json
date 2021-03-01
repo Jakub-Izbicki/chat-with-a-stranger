@@ -7,7 +7,7 @@
     "postinstall": "npm install --prefix ./client && npm install --prefix ./server && npm run build --prefix ./client",
     "start": "npm run start --prefix ./server",
     "start:local": "npm run build --prefix ./client && npm run start --prefix ./server",
-    "heroku:deploy": " git push heroku master && heroku logs --tail"
+    "heroku:deploy": "heroku git:remote -a chat-with-a-stranger-1 && heroku config:set NPM_CONFIG_PRODUCTION=false && git push heroku master && heroku logs --tail"
   },
   "author": "",
   "license": "ISC"
