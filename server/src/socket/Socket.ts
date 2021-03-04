@@ -1,8 +1,10 @@
-import {Server} from "http";
-import {Server as Io, Socket} from "socket.io"
+import {Server as HttpServer} from "http";
+import {Server, Socket} from "socket.io"
 import logger from "@shared/Logger";
+import ChatLobby from "./ChatLobby";
+import LobbyGuest from "./LobbyGuest";
 
-const intervals: Map<string, NodeJS.Timeout> = new Map<string, NodeJS.Timeout>();
+const chatLobby = new ChatLobby();
 
 function getServerOptions() {
     if (process.env.NODE_ENV !== "production") {
@@ -16,29 +18,12 @@ function getServerOptions() {
     }
 }
 
-export default function useWebsocket(server: Server) {
-    const io = new Io(server, getServerOptions());
+export default function useWebsocket(server: HttpServer) {
+    const io = new Server(server, getServerOptions());
 
     io.on("connection", socket => {
-        const connection = socket as Socket;
-        logger.info(`Connection established: ${connection.id}`);
+        logger.info(`Connection established: ${socket.id}`);
 
-        const interval = setInterval(() => {
-            logger.info(`Sending ping to: ${connection.id}`);
-            connection.emit("ping", "Hello world");
-        }, 1000);
-
-        intervals.set(connection.id, interval);
-
-        connection.on("disconnect", () => {
-            logger.info(`Connection closed: ${connection.id}`);
-            const interval = intervals.get(connection.id);
-
-            if (interval) {
-                intervals.delete(connection.id);
-                clearInterval(interval);
-            }
-        })
+        chatLobby.addToLobby(new LobbyGuest(socket.id, socket as Socket));
     });
-
 }
