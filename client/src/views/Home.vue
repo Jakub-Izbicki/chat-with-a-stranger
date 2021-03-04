@@ -2,7 +2,7 @@
   <div>
     <p>Server status: {{ serverStatus }} {{ tick }}</p>
     <p>Server env: {{ serverEnv }}</p>
-    <p>Websocket ping: {{ socketTick }}</p>
+    <p v-for="(msg, i) in messages" :key="i">{{ msg }}</p>
   </div>
 </template>
 
@@ -20,7 +20,7 @@ export default class Home extends Vue {
 
   private tick = "/";
 
-  private socketTick = "/";
+  private messages = new Array<string>();
 
   private socket!: Socket;
 
@@ -41,12 +41,15 @@ export default class Home extends Vue {
     }
 
     this.socket.on("connect", () => {
-      console.info("Connected to socket");
+      this.logMessage(`Entered lobby. My id: ${this.socket.id}`);
     });
 
-    this.socket.on("ping", () => {
-      console.info("received ping");
-      this.updateSocketTick();
+    this.socket.on("match", (matchId) => {
+      this.logMessage(`Matched with id: ${matchId}`);
+    });
+
+    this.socket.on("disconnect", () => {
+      this.logMessage("Left lobby.");
     });
   }
 
@@ -58,12 +61,8 @@ export default class Home extends Vue {
     }
   }
 
-  private updateSocketTick(): void {
-    if (this.socketTick === "/") {
-      this.socketTick = "\\";
-    } else {
-      this.socketTick = "/";
-    }
+  private logMessage(msg: string): void {
+    this.messages.push(msg);
   }
 
   private getSocketUrl(): string | null {
