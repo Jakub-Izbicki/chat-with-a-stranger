@@ -1,14 +1,15 @@
 <template>
   <div>
-    <p>Server status: {{ serverStatus }}</p>
+    <p>Server status: {{ serverStatus }} {{ tick }}</p>
     <p>Server env: {{ serverEnv }}</p>
-    <p>{{ tick }}</p>
+    <p>Websocket ping: {{ socketTick }}</p>
   </div>
 </template>
 
 <script lang="ts">
 import {Component, Vue} from "vue-property-decorator";
 import axios from "axios";
+import {io, Socket} from "socket.io-client";
 
 @Component
 export default class Home extends Vue {
@@ -19,6 +20,10 @@ export default class Home extends Vue {
 
   private tick = "/";
 
+  private socketTick = "/";
+
+  private socket!: Socket;
+
   mounted() {
     setInterval(() => {
       axios.get("/api/status")
@@ -28,6 +33,21 @@ export default class Home extends Vue {
             this.updateTick();
           });
     }, 1000);
+
+    if (this.getSocketUrl()) {
+      this.socket = io(this.getSocketUrl() as string);
+    } else {
+      this.socket = io();
+    }
+
+    this.socket.on("connect", () => {
+      console.info("Connected to socket");
+    });
+
+    this.socket.on("ping", () => {
+      console.info("received ping");
+      this.updateSocketTick();
+    });
   }
 
   private updateTick(): void {
@@ -35,6 +55,22 @@ export default class Home extends Vue {
       this.tick = "\\";
     } else {
       this.tick = "/";
+    }
+  }
+
+  private updateSocketTick(): void {
+    if (this.socketTick === "/") {
+      this.socketTick = "\\";
+    } else {
+      this.socketTick = "/";
+    }
+  }
+
+  private getSocketUrl(): string | null {
+    if (process.env.NODE_ENV !== "production") {
+      return "http://localhost:3000";
+    } else {
+      return null;
     }
   }
 }

@@ -4,13 +4,17 @@ import helmet from 'helmet';
 import cors from 'cors';
 
 import express, { NextFunction, Request, Response } from 'express';
+import http from 'http'
 import StatusCodes from 'http-status-codes';
 import 'express-async-errors';
 
 import StatusRouter from './routes/Status';
 import logger from '@shared/Logger';
+import useWebsocket from "./socket/Socket";
 
 const app = express();
+const server = http.createServer(app);
+
 const { BAD_REQUEST } = StatusCodes;
 
 app.use(express.json());
@@ -29,6 +33,7 @@ if (process.env.NODE_ENV === 'production') {
 
 // Add APIs
 app.use('/api', StatusRouter);
+useWebsocket(server);
 
 // Print API errors
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -39,4 +44,5 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
     });
 });
 
-export default app;
+
+export default server;
