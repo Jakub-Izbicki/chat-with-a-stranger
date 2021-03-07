@@ -44,7 +44,7 @@ export default class Home extends Vue {
       this.logMessage(`Entered lobby. My id: ${this.socket.id}`);
     });
 
-    this.socket.on("match", (matchId) => {
+    this.socket.on("match", (matchId: string) => {
       this.logMessage(`Matched with id: ${matchId}`);
     });
 
