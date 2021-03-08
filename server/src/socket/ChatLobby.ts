@@ -1,42 +1,114 @@
 import logger from "@shared/Logger";
 import LobbyGuest from "./LobbyGuest";
+import SignalingGuestsPair from "./SignalingGuestsPair";
 
 export default class ChatLobby {
 
     private readonly MATCH_EVENT = "match";
 
-    private lobbyGuests = new Array<LobbyGuest>();
+    private readonly OFFER_EVENT = "offer";
+
+    private readonly ANSWER_EVENT = "answer";
+
+    private readonly ICE_EVENT = "icecandidate";
+
+    private readonly PAIR_CONNECTED_EVENT = "pairconnected";
+
+    private waitingGuests = new Array<LobbyGuest>();
+
+    private signalingGuests = new Array<SignalingGuestsPair>();
 
     public addToLobby(newGuest: LobbyGuest): void {
         newGuest.socket.on("disconnect", () => {
             logger.info(`Connection closed: ${newGuest.id}`);
-            this.lobbyGuests = this.lobbyGuests.filter(guest => guest.id !== newGuest.id);
+            this.removeGuestFromLobby(newGuest);
         });
 
         if (this.anyGuestAlreadyWaiting()) {
-            const matchedGuest = this.lobbyGuests.pop() as LobbyGuest;
+            const matchedGuest = this.waitingGuests.pop() as LobbyGuest;
             logger.info(`Matching ${newGuest.id} with ${matchedGuest.id}`);
 
-            this.sentMatchAndDisconnect(newGuest, matchedGuest);
-            this.sentMatchAndDisconnect(matchedGuest, newGuest);
+            this.sentMatchAndBeginSignaling(newGuest, matchedGuest);
         } else {
             logger.info(`Placing ${newGuest.id} in lobby`);
-            this.lobbyGuests.push(newGuest);
+            this.waitingGuests.push(newGuest);
         }
 
-        if (this.lobbyGuests.length > 1) {
-            const guests = this.lobbyGuests.length;
+        if (this.waitingGuests.length > 1) {
+            const guests = this.waitingGuests.length;
             throw `Max number of guests waiting in lobby cannot be more that 1, was: ${guests}`;
         }
+    }
 
+    private removeGuestFromLobby(guest: LobbyGuest): void {
+        if (this.isGuestInSignaling(guest.id)) {
+            const pairToRemove = this.signalingGuests.find(pair => pair.contains(guest.id)) as SignalingGuestsPair;
+            this.signalingGuests = this.signalingGuests.filter(pair => !pair.contains(guest.id));
+            guest.socket.disconnect(true);
+            pairToRemove.getOther(guest.id).socket.disconnect(true);
+        } else {
+            this.waitingGuests = this.waitingGuests.filter(guest => guest.id !== guest.id);
+        }
+    }
+
+    private isGuestInSignaling(guestId: string): boolean {
+        return this.signalingGuests.some(pair => pair.contains(guestId))
     }
 
     private anyGuestAlreadyWaiting(): boolean {
-        return !!this.lobbyGuests.length;
+        return !!this.waitingGuests.length;
     }
 
-    private sentMatchAndDisconnect(sendTo: LobbyGuest, match: LobbyGuest): void {
-        sendTo.socket.emit(this.MATCH_EVENT, match.id);
-        sendTo.socket.disconnect(true);
+    private sentMatchAndBeginSignaling(newGuest: LobbyGuest, matchedGuest: LobbyGuest): void {
+        const pair = new SignalingGuestsPair(newGuest, matchedGuest);
+        this.moveToSignaling(pair);
+        this.addSignalingEvents(pair);
+        this.sendMatch(pair);
+    }
+
+    private moveToSignaling(pair: SignalingGuestsPair) {
+        this.waitingGuests = this.waitingGuests.filter(guest => guest.id !== pair.first.id);
+        this.waitingGuests = this.waitingGuests.filter(guest => guest.id !== pair.second.id);
+        this.signalingGuests.push(pair);
+    }
+
+    private addSignalingEvents(pair: SignalingGuestsPair): void {
+        this.addOfferingGuestEvents(pair.first, pair.second);
+        this.addAnsweringGuestEvents(pair.second, pair.first);
+    }
+
+    private addOfferingGuestEvents(offeringGuest: LobbyGuest, answeringGuest: LobbyGuest): void {
+        offeringGuest.socket.on(this.OFFER_EVENT, (offer) => {
+            answeringGuest.socket.emit(this.OFFER_EVENT, offer);
+        });
+        this.addIceCandidateEvent(offeringGuest, answeringGuest);
+        this.addPairConnectedEvent(offeringGuest);
+    }
+
+    private addAnsweringGuestEvents(answeringGuest: LobbyGuest, offeringGuest: LobbyGuest): void {
+        answeringGuest.socket.on(this.ANSWER_EVENT, (offer) => {
+            offeringGuest.socket.emit(this.ANSWER_EVENT, offer);
+        });
+        this.addIceCandidateEvent(answeringGuest, offeringGuest);
+        this.addPairConnectedEvent(answeringGuest);
+    }
+
+    private addIceCandidateEvent(sendingGuest: LobbyGuest, receivingGuest: LobbyGuest): void {
+        sendingGuest.socket.on(this.ICE_EVENT, (icecandidate) => {
+            receivingGuest.socket.emit(this.ICE_EVENT, icecandidate);
+        });
+    }
+
+    private addPairConnectedEvent(sendingGuest: LobbyGuest): void {
+        sendingGuest.socket.on(this.PAIR_CONNECTED_EVENT, () => {
+            // when any of guests sends this event it means webrtc connection is established
+            // cleanup, remove pair from lobby, and (maybe) disconnect both sockets from lobby
+            this.removeGuestFromLobby(sendingGuest);
+        });
+    }
+
+    private sendMatch(pair: SignalingGuestsPair) {
+        pair.first.socket.emit(this.MATCH_EVENT, pair.second.id);
+        pair.second.socket.emit(this.MATCH_EVENT, pair.first.id);
     }
 }
