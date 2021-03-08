@@ -34,10 +34,8 @@ export default class ChatLobby {
             this.waitingGuests.push(newGuest);
         }
 
-        if (this.waitingGuests.length > 1) {
-            const guests = this.waitingGuests.length;
-            throw `Max number of guests waiting in lobby cannot be more that 1, was: ${guests}`;
-        }
+        this.validateWaitingGuests();
+        // todo: this.removeTimeoutedSignalingGuests();
     }
 
     private removeGuestFromLobby(guest: LobbyGuest): void {
@@ -110,5 +108,12 @@ export default class ChatLobby {
     private sendMatch(pair: SignalingGuestsPair) {
         pair.first.socket.emit(this.MATCH_EVENT, pair.second.id);
         pair.second.socket.emit(this.MATCH_EVENT, pair.first.id);
+    }
+
+    private validateWaitingGuests() {
+        if (this.waitingGuests.length > 1) {
+            const guests = this.waitingGuests.length;
+            throw `Max number of guests waiting in lobby cannot be more that 1, was: ${guests}`;
+        }
     }
 }
