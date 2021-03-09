@@ -6,6 +6,8 @@ export default class ChatLobby {
 
     private readonly MATCH_EVENT = "match";
 
+    private readonly OFFER_REQUEST_EVENT = "offer-request";
+
     private readonly OFFER_EVENT = "offer";
 
     private readonly ANSWER_EVENT = "answer";
@@ -40,7 +42,8 @@ export default class ChatLobby {
 
     private removeGuestFromLobby(guest: LobbyGuest): void {
         if (this.isGuestInSignaling(guest.id)) {
-            const pairToRemove = this.signalingGuests.find(pair => pair.contains(guest.id)) as SignalingGuestsPair;
+            const pairToRemove =
+                this.signalingGuests.find(pair => pair.contains(guest.id)) as SignalingGuestsPair;
             this.signalingGuests = this.signalingGuests.filter(pair => !pair.contains(guest.id));
             guest.socket.disconnect(true);
             pairToRemove.getOther(guest.id).socket.disconnect(true);
@@ -62,6 +65,7 @@ export default class ChatLobby {
         this.moveToSignaling(pair);
         this.addSignalingEvents(pair);
         this.sendMatch(pair);
+        this.sentOfferRequest(pair.first);
     }
 
     private moveToSignaling(pair: SignalingGuestsPair) {
@@ -110,10 +114,17 @@ export default class ChatLobby {
         pair.second.socket.emit(this.MATCH_EVENT, pair.first.id);
     }
 
+    private sentOfferRequest(offeringGuest: LobbyGuest) {
+        offeringGuest.socket.emit(this.OFFER_REQUEST_EVENT);
+    }
+
     private validateWaitingGuests() {
         if (this.waitingGuests.length > 1) {
             const guests = this.waitingGuests.length;
             throw `Max number of guests waiting in lobby cannot be more that 1, was: ${guests}`;
         }
+
+        logger.info(`Remaining in lobby: ${this.waitingGuests.map(g => g.id).join(", ")}`)
+        logger.info(`Remaining in signaling: ${this.signalingGuests.map(p => `[${p.first.id}, ${p.second.id}]`).join(", ")}`)
     }
 }

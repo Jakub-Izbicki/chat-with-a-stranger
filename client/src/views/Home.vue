@@ -2,6 +2,7 @@
   <div>
     <p>Server status: {{ serverStatus }} {{ tick }}</p>
     <p>Server env: {{ serverEnv }}</p>
+    <p v-if="chatLobby">{{ chatState }}</p>
     <p v-for="(msg, i) in messages" :key="i">{{ msg }}</p>
   </div>
 </template>
@@ -9,7 +10,8 @@
 <script lang="ts">
 import {Component, Vue} from "vue-property-decorator";
 import axios from "axios";
-import {io, Socket} from "socket.io-client";
+import Chat from "@/domain/Chat";
+import {ChatState} from "@/domain/ChatState";
 
 @Component
 export default class Home extends Vue {
@@ -22,7 +24,7 @@ export default class Home extends Vue {
 
   private messages = new Array<string>();
 
-  private socket!: Socket;
+  private chatLobby: Chat | null = null;
 
   mounted() {
     setInterval(() => {
@@ -34,23 +36,12 @@ export default class Home extends Vue {
           });
     }, 1000);
 
-    if (this.getSocketUrl()) {
-      this.socket = io(this.getSocketUrl() as string);
-    } else {
-      this.socket = io();
-    }
+    this.chatLobby = new Chat();
+    this.chatLobby.enterChat();
+  }
 
-    this.socket.on("connect", () => {
-      this.logMessage(`Entered lobby. My id: ${this.socket.id}`);
-    });
-
-    this.socket.on("match", (matchId: string) => {
-      this.logMessage(`Matched with id: ${matchId}`);
-    });
-
-    this.socket.on("disconnect", () => {
-      this.logMessage("Left lobby.");
-    });
+  get chatState(): string {
+    return ChatState[this.chatLobby?.state as ChatState];
   }
 
   private updateTick(): void {
@@ -58,18 +49,6 @@ export default class Home extends Vue {
       this.tick = "\\";
     } else {
       this.tick = "/";
-    }
-  }
-
-  private logMessage(msg: string): void {
-    this.messages.push(msg);
-  }
-
-  private getSocketUrl(): string | null {
-    if (process.env.NODE_ENV !== "production") {
-      return "http://localhost:3000";
-    } else {
-      return null;
     }
   }
 }
