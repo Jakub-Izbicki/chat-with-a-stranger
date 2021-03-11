@@ -9,7 +9,6 @@
 
 <script lang="ts">
 import {Component, Vue} from "vue-property-decorator";
-import axios from "axios";
 import Chat from "@/domain/Chat";
 import {ChatState} from "@/domain/ChatState";
 
@@ -27,17 +26,12 @@ export default class Home extends Vue {
   private chatLobby: Chat | null = null;
 
   mounted() {
-    setInterval(() => {
-      axios.get("/api/status")
-          .then((response) => {
-            this.serverStatus = `${response.status}`;
-            this.serverEnv = `${response.data.env}`;
-            this.updateTick();
-          });
-    }, 1000);
-
     this.chatLobby = new Chat();
     this.chatLobby.enterChat();
+  }
+
+  beforeDestroy() {
+    this.chatLobby?.leaveChat();
   }
 
   get chatState(): string {

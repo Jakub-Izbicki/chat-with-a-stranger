@@ -60,6 +60,14 @@ export default class Chat {
         });
     }
 
+    public leaveChat(): void {
+        console.info("Leaving chat");
+        this.socket = null;
+        this.peerConnection = null;
+        this.dataChannel = null;
+        this.state = ChatState.IDLE;
+    }
+
     private initSocket(): void {
         if (this.getSocketUrl()) {
             this.socket = io(this.getSocketUrl() as string);
@@ -120,11 +128,7 @@ export default class Chat {
     }
 
     private reenterChat(): void {
-        console.info("Disconnected.");
-        this.socket = null;
-        this.peerConnection = null;
-        this.dataChannel = null;
-        this.state = ChatState.IDLE;
+        this.leaveChat();
         this.enterChat();
     }
 }
