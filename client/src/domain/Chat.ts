@@ -20,7 +20,7 @@ export default class Chat {
         });
 
         this.socket?.on("disconnect", () => {
-            if (this.state !== ChatState.PEERS_CONNECTED && this.state !== ChatState.READY_TO_MESSAGE) {
+            if (this.state !== ChatState.READY_TO_CHAT) {
                 this.reenterChat();
             }
         });
@@ -100,7 +100,11 @@ export default class Chat {
         this.peerConnection.addEventListener("connectionstatechange", () => {
             if (this.peerConnection?.connectionState === "connected") {
                 console.info("Pair connected");
-                this.state = ChatState.PEERS_CONNECTED;
+                if (this.state !== ChatState.DATA_CHANNEL_OPEN) {
+                    this.state = ChatState.PEERS_CONNECTED;
+                } else {
+                    this.state = ChatState.READY_TO_CHAT;
+                }
                 this.socket?.emit("pairconnected");
                 this.socket = null;
             }
@@ -114,7 +118,11 @@ export default class Chat {
 
     private addDataChannelEvents(): void {
         this.dataChannel?.addEventListener("open", () => {
-            this.state = ChatState.READY_TO_MESSAGE;
+            if (this.state !== ChatState.PEERS_CONNECTED) {
+                this.state = ChatState.DATA_CHANNEL_OPEN;
+            } else {
+                this.state = ChatState.READY_TO_CHAT;
+            }
             this.dataChannel?.send("Hello world!");
         });
 

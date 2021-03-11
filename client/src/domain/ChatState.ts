@@ -3,5 +3,6 @@ export enum ChatState {
     SEARCHING,
     SIGNALING,
     PEERS_CONNECTED,
-    READY_TO_MESSAGE
+    DATA_CHANNEL_OPEN,
+    READY_TO_CHAT
 }
