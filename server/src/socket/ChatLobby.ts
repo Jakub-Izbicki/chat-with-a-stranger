@@ -48,7 +48,7 @@ export default class ChatLobby {
             guest.socket.disconnect(true);
             pairToRemove.getOther(guest.id).socket.disconnect(true);
         } else {
-            this.waitingGuests = this.waitingGuests.filter(guest => guest.id !== guest.id);
+            this.waitingGuests = this.waitingGuests.filter(g => g.id !== guest.id);
         }
     }
 
@@ -103,8 +103,6 @@ export default class ChatLobby {
 
     private addPairConnectedEvent(sendingGuest: LobbyGuest): void {
         sendingGuest.socket.on(this.PAIR_CONNECTED_EVENT, () => {
-            // when any of guests sends this event it means webrtc connection is established
-            // cleanup, remove pair from lobby, and (maybe) disconnect both sockets from lobby
             this.removeGuestFromLobby(sendingGuest);
         });
     }
