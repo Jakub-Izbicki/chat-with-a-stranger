@@ -1,13 +1,24 @@
 import {io, Socket} from "socket.io-client";
 import {ChatState} from "@/domain/ChatState";
+import {v4 as uuid4} from "uuid"
 
 export default class Chat {
+
+    private readonly PING_TIMEOUT = 2000;
+
+    private readonly PING_INTERVAL = 1000;
 
     private socket: Socket | null = null;
 
     private peerConnection: RTCPeerConnection | null = null;
 
     private dataChannel: RTCDataChannel | null = null;
+
+    private signalingPingTimeout: number | null = null;
+
+    private signalingPingInterval: number | null = null;
+
+    private signalingPingToken: string | null = null;
 
     public state = ChatState.IDLE;
 
@@ -28,6 +39,12 @@ export default class Chat {
         this.socket?.on("match", (matchId: string) => {
             console.info(`Matched with id: ${matchId}`);
             this.state = ChatState.SIGNALING;
+
+            this.socket?.on("signalingPingRequest", (token: string) => {
+                this.socket?.emit("signalingPingResponse", token);
+            });
+
+            this.sendSignalingPing();
         });
 
         this.socket?.on("offer-request", async () => {
@@ -62,8 +79,14 @@ export default class Chat {
 
     public leaveChat(): void {
         console.info("Leaving chat");
+        this.stopSignalingPing();
+        // todo: remove peer ping
+
+        // todo: disconnect socket?
         this.socket = null;
+        // todo: close peer connection?
         this.peerConnection = null;
+        // todo close data channel?
         this.dataChannel = null;
         this.state = ChatState.IDLE;
     }
@@ -104,8 +127,13 @@ export default class Chat {
                     this.state = ChatState.PEERS_CONNECTED;
                 } else {
                     this.state = ChatState.READY_TO_CHAT;
+                    this.stopSignalingPing();
+                    // todo: add peer ping
                 }
-                this.socket?.emit("pairconnected");
+
+                //todo: remove this?
+                // this.socket?.emit("pairconnected");
+
                 this.socket = null;
             }
         });
@@ -122,6 +150,8 @@ export default class Chat {
                 this.state = ChatState.DATA_CHANNEL_OPEN;
             } else {
                 this.state = ChatState.READY_TO_CHAT;
+                this.stopSignalingPing();
+                // todo: add peer ping
             }
             this.dataChannel?.send("Hello world!");
         });
@@ -138,5 +168,36 @@ export default class Chat {
     private reenterChat(): void {
         this.leaveChat();
         this.enterChat();
+    }
+
+    private sendSignalingPing(): void {
+        if (this.signalingPingInterval) {
+            clearTimeout(this.signalingPingInterval);
+        }
+
+        this.signalingPingToken = uuid4();
+        console.info(`Sending signaling ping: ${this.signalingPingToken}`);
+        this.socket?.emit("signalingPingRequest", this.signalingPingToken);
+        this.socket?.off("signalingPingResponse", (token: string) => this.resetSignalingPing(token));
+        this.socket?.on("signalingPingResponse", (token: string) => this.resetSignalingPing(token));
+
+        this.signalingPingTimeout = setTimeout(() => this.reenterChat(), this.PING_TIMEOUT);
+    }
+
+    private resetSignalingPing(token: string): void {
+        console.info(`Received signaling ping token: ${token}`);
+        if (this.signalingPingToken === token) {
+            clearTimeout(this.signalingPingTimeout as number);
+            this.signalingPingInterval = setTimeout(() => this.sendSignalingPing(), this.PING_INTERVAL);
+        }
+    }
+
+    private stopSignalingPing(): void {
+        if (this.signalingPingInterval) {
+            clearTimeout(this.signalingPingInterval);
+        }
+        if (this.signalingPingTimeout) {
+            clearTimeout(this.signalingPingTimeout);
+        }
     }
 }

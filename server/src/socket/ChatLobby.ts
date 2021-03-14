@@ -6,6 +6,10 @@ export default class ChatLobby {
 
     private readonly MATCH_EVENT = "match";
 
+    private readonly SIGNALING_PING_REQUEST_EVENT = "signalingPingRequest";
+
+    private readonly SIGNALING_PING_RESPONSE_EVENT = "signalingPingResponse";
+
     private readonly OFFER_REQUEST_EVENT = "offer-request";
 
     private readonly OFFER_EVENT = "offer";
@@ -80,6 +84,8 @@ export default class ChatLobby {
     }
 
     private addOfferingGuestEvents(offeringGuest: LobbyGuest, answeringGuest: LobbyGuest): void {
+        this.addSignalingPingRequestEvent(offeringGuest, answeringGuest);
+        this.addSignalingPingResponseEvent(offeringGuest, answeringGuest);
         offeringGuest.socket.on(this.OFFER_EVENT, (offer) => {
             answeringGuest.socket.emit(this.OFFER_EVENT, offer);
         });
@@ -88,11 +94,25 @@ export default class ChatLobby {
     }
 
     private addAnsweringGuestEvents(answeringGuest: LobbyGuest, offeringGuest: LobbyGuest): void {
+        this.addSignalingPingRequestEvent(answeringGuest, offeringGuest);
+        this.addSignalingPingResponseEvent(answeringGuest, offeringGuest);
         answeringGuest.socket.on(this.ANSWER_EVENT, (offer) => {
             offeringGuest.socket.emit(this.ANSWER_EVENT, offer);
         });
         this.addIceCandidateEvent(answeringGuest, offeringGuest);
         this.addPairConnectedEvent(answeringGuest);
+    }
+
+    private addSignalingPingRequestEvent(sendingGuest: LobbyGuest, receivingGuest: LobbyGuest): void {
+        sendingGuest.socket.on(this.SIGNALING_PING_REQUEST_EVENT, (token) => {
+            receivingGuest.socket.emit(this.SIGNALING_PING_REQUEST_EVENT, token);
+        });
+    }
+
+    private addSignalingPingResponseEvent(sendingGuest: LobbyGuest, receivingGuest: LobbyGuest): void {
+        sendingGuest.socket.on(this.SIGNALING_PING_RESPONSE_EVENT, (token) => {
+            receivingGuest.socket.emit(this.SIGNALING_PING_RESPONSE_EVENT, token);
+        });
     }
 
     private addIceCandidateEvent(sendingGuest: LobbyGuest, receivingGuest: LobbyGuest): void {
