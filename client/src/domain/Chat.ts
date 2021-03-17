@@ -127,14 +127,15 @@ export default class Chat {
                     this.state = ChatState.READY_TO_CHAT;
                     (this.signalingPing as SocketPing).stop();
                     this.signalingPing = null;
+                    this.socket?.disconnect();
+                    this.socket = null;
                     this.peerPing = new PeerPing(this.dataChannel as RTCDataChannel, () => this.reenterChat());
                     this.peerPing.start();
                 }
 
                 //todo: remove this?
                 // this.socket?.emit("pairconnected");
-
-                this.socket = null;
+                // this.socket = null;
             }
         });
 
@@ -152,6 +153,8 @@ export default class Chat {
                 this.state = ChatState.READY_TO_CHAT;
                 (this.signalingPing as SocketPing).stop();
                 this.signalingPing = null;
+                this.socket?.disconnect();
+                this.socket = null;
                 this.peerPing = new PeerPing(this.dataChannel as RTCDataChannel, () => this.reenterChat());
                 this.peerPing.start();
             }

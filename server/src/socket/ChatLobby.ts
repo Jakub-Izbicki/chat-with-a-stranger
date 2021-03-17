@@ -28,6 +28,7 @@ export default class ChatLobby {
         newGuest.socket.on("disconnect", () => {
             logger.info(`Connection closed: ${newGuest.id}`);
             this.removeGuestFromLobby(newGuest);
+            this.logRemaining();
         });
 
         if (this.anyGuestAlreadyWaiting()) {
@@ -141,7 +142,10 @@ export default class ChatLobby {
             const guests = this.waitingGuests.length;
             throw `Max number of guests waiting in lobby cannot be more that 1, was: ${guests}`;
         }
+        this.logRemaining();
+    }
 
+    private logRemaining(): void {
         logger.info(`Remaining in lobby: ${this.waitingGuests.map(g => g.id).join(", ")}`)
         logger.info(`Remaining in signaling: ${this.signalingGuests.map(p => `[${p.first.id}, ${p.second.id}]`).join(", ")}`)
     }
