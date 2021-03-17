@@ -122,6 +122,7 @@ export default class ChatLobby {
         });
     }
 
+    // todo: remove this unused method
     private addPairConnectedEvent(sendingGuest: LobbyGuest): void {
         sendingGuest.socket.on(this.PAIR_CONNECTED_EVENT, () => {
             this.removeGuestFromLobby(sendingGuest);
