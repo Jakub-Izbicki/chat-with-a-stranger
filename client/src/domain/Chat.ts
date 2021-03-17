@@ -1,7 +1,7 @@
 import {io, Socket} from "socket.io-client";
 import {ChatState} from "@/domain/ChatState";
-import {v4 as uuid4} from "uuid"
 import SocketPing from "@/domain/SocketPing";
+import PeerPing from "@/domain/PeerPing";
 
 export default class Chat {
 
@@ -12,6 +12,8 @@ export default class Chat {
     private dataChannel: RTCDataChannel | null = null;
 
     private signalingPing: SocketPing | null = null;
+
+    private peerPing: PeerPing | null = null;
 
     public state = ChatState.IDLE;
 
@@ -37,7 +39,7 @@ export default class Chat {
                 this.socket?.emit("signalingPingResponse", token);
             });
 
-            this.signalingPing = new SocketPing(this.socket as Socket, () => this.leaveChat());
+            this.signalingPing = new SocketPing(this.socket as Socket, () => this.reenterChat());
             this.signalingPing.start();
         });
 
@@ -73,14 +75,16 @@ export default class Chat {
 
     public leaveChat(): void {
         console.info("Leaving chat");
-        (this.signalingPing as SocketPing).stop();
-        // todo: remove peer ping
+        this.signalingPing?.stop();
+        this.signalingPing = null;
+        this.peerPing?.stop();
+        this.peerPing = null;
 
-        // todo: disconnect socket?
+        this.socket?.disconnect();
         this.socket = null;
-        // todo: close peer connection?
+        this.peerConnection?.close();
         this.peerConnection = null;
-        // todo close data channel?
+        this.dataChannel?.close();
         this.dataChannel = null;
         this.state = ChatState.IDLE;
     }
@@ -122,7 +126,9 @@ export default class Chat {
                 } else {
                     this.state = ChatState.READY_TO_CHAT;
                     (this.signalingPing as SocketPing).stop();
-                    // todo: add peer ping
+                    this.signalingPing = null;
+                    this.peerPing = new PeerPing(this.dataChannel as RTCDataChannel, () => this.reenterChat());
+                    this.peerPing.start();
                 }
 
                 //todo: remove this?
@@ -145,7 +151,9 @@ export default class Chat {
             } else {
                 this.state = ChatState.READY_TO_CHAT;
                 (this.signalingPing as SocketPing).stop();
-                // todo: add peer ping
+                this.signalingPing = null;
+                this.peerPing = new PeerPing(this.dataChannel as RTCDataChannel, () => this.reenterChat());
+                this.peerPing.start();
             }
             this.dataChannel?.send("Hello world!");
         });
@@ -155,7 +163,14 @@ export default class Chat {
         });
 
         this.dataChannel?.addEventListener("message", (event: MessageEvent) => {
-            console.info(event.data);
+            if (PeerPing.isPingMsg(event.data)) {
+                (this.dataChannel as RTCDataChannel)
+                    .send(PeerPing.PING_RESPONSE_TAG + PeerPing.extractPingToken(event.data));
+            } else if (PeerPing.isPingResponseMsg(event.data)) {
+                (this.peerPing as PeerPing).reset(PeerPing.extractPingResponseToken(event.data));
+            } else {
+                console.info(event.data);
+            }
         });
     }
 

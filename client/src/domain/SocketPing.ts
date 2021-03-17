@@ -7,11 +7,11 @@ export default class SocketPing {
 
     private readonly PING_INTERVAL = 1000;
 
+    protected pingToken: string | null = null;
+
     private pingTimeout: number | null = null;
 
     private pingInterval: number | null = null;
-
-    private pingToken: string | null = null;
 
     constructor(readonly socket: Socket, readonly timeoutCallback: Function) {
     }
@@ -21,7 +21,28 @@ export default class SocketPing {
     }
 
     public stop(): void {
-        this.stopSignalingPing();
+        this.stopPing();
+    }
+
+    protected getPingName(): string {
+        return "signaling";
+    }
+
+    protected setResponseListener(): void {
+        this.socket?.off("signalingPingResponse", (token: string) => this.resetPing(token));
+        this.socket?.on("signalingPingResponse", (token: string) => this.resetPing(token));
+    }
+
+    protected emitPing(): void {
+        this.socket?.emit("signalingPingRequest", this.pingToken);
+    }
+
+    protected resetPing(token: string): void {
+        console.info(`Received ${this.getPingName()} ping token: ${token}`);
+        if (this.pingToken === token) {
+            clearTimeout(this.pingTimeout as number);
+            this.pingInterval = setTimeout(() => this.sendPing(), this.PING_INTERVAL);
+        }
     }
 
     private sendPing(): void {
@@ -30,23 +51,14 @@ export default class SocketPing {
         }
 
         this.pingToken = uuid4();
-        console.info(`Sending ping: ${this.pingToken}`);
-        this.socket?.emit("signalingPingRequest", this.pingToken);
-        this.socket?.off("signalingPingResponse", (token: string) => this.resetSignalingPing(token));
-        this.socket?.on("signalingPingResponse", (token: string) => this.resetSignalingPing(token));
+        console.info(`Sending ${this.getPingName()} ping: ${this.pingToken}`);
+        this.setResponseListener();
+        this.emitPing();
 
         this.pingTimeout = setTimeout(() => this.timeoutCallback(), this.PING_TIMEOUT);
     }
 
-    private resetSignalingPing(token: string): void {
-        console.info(`Received ping token: ${token}`);
-        if (this.pingToken === token) {
-            clearTimeout(this.pingTimeout as number);
-            this.pingInterval = setTimeout(() => this.sendPing(), this.PING_INTERVAL);
-        }
-    }
-
-    private stopSignalingPing(): void {
+    private stopPing(): void {
         if (this.pingInterval) {
             clearTimeout(this.pingInterval);
         }
