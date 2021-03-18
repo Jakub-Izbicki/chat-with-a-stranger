@@ -1,6 +1,7 @@
 import logger from "@shared/Logger";
 import LobbyGuest from "./LobbyGuest";
 import SignalingGuestsPair from "./SignalingGuestsPair";
+import moment from "moment";
 
 export default class ChatLobby {
 
@@ -24,6 +25,10 @@ export default class ChatLobby {
 
     private signalingGuests = new Array<SignalingGuestsPair>();
 
+    constructor() {
+        setInterval(() => this.removeTimeoutedPairs(), 2000);
+    }
+
     public addToLobby(newGuest: LobbyGuest): void {
         newGuest.socket.on("disconnect", () => {
             logger.info(`Connection closed: ${newGuest.id}`);
@@ -42,7 +47,13 @@ export default class ChatLobby {
         }
 
         this.validateWaitingGuests();
-        // todo: this.removeTimeoutedSignalingGuests();
+    }
+
+    private removeTimeoutedPairs() {
+        const latestDateAllowed = moment().subtract(5, "seconds");
+        this.signalingGuests =
+            this.signalingGuests.filter(pair => pair.creationDate.isAfter(latestDateAllowed));
+        this.logRemaining();
     }
 
     private removeGuestFromLobby(guest: LobbyGuest): void {
@@ -104,13 +115,15 @@ export default class ChatLobby {
         this.addPairConnectedEvent(answeringGuest);
     }
 
-    private addSignalingPingRequestEvent(sendingGuest: LobbyGuest, receivingGuest: LobbyGuest): void {
+    private addSignalingPingRequestEvent(sendingGuest: LobbyGuest,
+                                         receivingGuest: LobbyGuest): void {
         sendingGuest.socket.on(this.SIGNALING_PING_REQUEST_EVENT, (token) => {
             receivingGuest.socket.emit(this.SIGNALING_PING_REQUEST_EVENT, token);
         });
     }
 
-    private addSignalingPingResponseEvent(sendingGuest: LobbyGuest, receivingGuest: LobbyGuest): void {
+    private addSignalingPingResponseEvent(sendingGuest: LobbyGuest,
+                                          receivingGuest: LobbyGuest): void {
         sendingGuest.socket.on(this.SIGNALING_PING_RESPONSE_EVENT, (token) => {
             receivingGuest.socket.emit(this.SIGNALING_PING_RESPONSE_EVENT, token);
         });

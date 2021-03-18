@@ -1,9 +1,13 @@
 import LobbyGuest from "./LobbyGuest";
+import moment, {Moment} from "moment";
 
 export default class SignalingGuestsPair {
 
+    public readonly creationDate: Moment;
+
     constructor(readonly first: LobbyGuest,
                 readonly second: LobbyGuest) {
+        this.creationDate = moment();
     }
 
     public contains(guestId: string): boolean {
