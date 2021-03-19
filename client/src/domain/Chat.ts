@@ -27,7 +27,7 @@ export default class Chat {
 
         this.socket?.on("disconnect", () => {
             if (this.state !== ChatState.READY_TO_CHAT) {
-                this.reenterChat();
+                this.reenterChat("socket disconnect");
             }
         });
 
@@ -39,7 +39,7 @@ export default class Chat {
                 this.socket?.emit("signalingPingResponse", token);
             });
 
-            this.signalingPing = new SocketPing(this.socket as Socket, () => this.reenterChat());
+            this.signalingPing = new SocketPing(this.socket as Socket, () => this.reenterChat("socket ping timeout"));
             this.signalingPing.start();
         });
 
@@ -73,8 +73,8 @@ export default class Chat {
         });
     }
 
-    public leaveChat(): void {
-        console.info("Leaving chat");
+    public leaveChat(reason: string): void {
+        console.info(`Leaving chat, reason: ${reason}`);
         this.signalingPing?.stop();
         this.signalingPing = null;
         this.peerPing?.stop();
@@ -129,7 +129,7 @@ export default class Chat {
                     this.signalingPing = null;
                     this.socket?.disconnect();
                     this.socket = null;
-                    this.peerPing = new PeerPing(this.dataChannel as RTCDataChannel, () => this.reenterChat());
+                    this.peerPing = new PeerPing(this.dataChannel as RTCDataChannel, () => this.reenterChat("peer ping timeout"));
                     this.peerPing.start();
                 }
 
@@ -155,14 +155,14 @@ export default class Chat {
                 this.signalingPing = null;
                 this.socket?.disconnect();
                 this.socket = null;
-                this.peerPing = new PeerPing(this.dataChannel as RTCDataChannel, () => this.reenterChat());
+                this.peerPing = new PeerPing(this.dataChannel as RTCDataChannel, () => this.reenterChat("peer ping timeout"));
                 this.peerPing.start();
             }
             this.dataChannel?.send("Hello world!");
         });
 
         this.dataChannel?.addEventListener("close", () => {
-            this.reenterChat();
+            this.reenterChat("data channel closed");
         });
 
         this.dataChannel?.addEventListener("message", (event: MessageEvent) => {
@@ -177,8 +177,8 @@ export default class Chat {
         });
     }
 
-    private reenterChat(): void {
-        this.leaveChat();
+    private reenterChat(reason: string): void {
+        this.leaveChat(reason);
         this.enterChat();
     }
 }

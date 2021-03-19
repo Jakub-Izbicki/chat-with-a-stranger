@@ -4,7 +4,7 @@
 
 #### 0. Install:
 
-`npm install:all`,
+`npm run install:all`,
 
 #### 1.1 Server:
 

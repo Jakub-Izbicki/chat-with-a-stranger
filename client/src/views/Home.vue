@@ -31,7 +31,7 @@ export default class Home extends Vue {
   }
 
   beforeDestroy() {
-    this.chatLobby?.leaveChat();
+    this.chatLobby?.leaveChat("component being destroyed");
   }
 
   get chatState(): string {
