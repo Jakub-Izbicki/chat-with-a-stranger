@@ -2,9 +2,12 @@
 
 ### Development:
 
-#### 0. Install:
+#### Install:
+`cd client`
+`npm run install`,
 
-`npm run install:all`,
+`cd server`
+`npm run install`,
 
 #### 1.1 Server:
 
