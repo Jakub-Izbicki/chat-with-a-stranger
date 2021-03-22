@@ -122,14 +122,7 @@ export default class Chat {
                 if (this.state !== ChatState.DATA_CHANNEL_OPEN) {
                     this.state = ChatState.PEERS_CONNECTED;
                 } else {
-                    this.state = ChatState.READY_TO_CHAT;
-                    (this.signalingPing as SocketPing).stop();
-                    this.signalingPing = null;
-                    this.socket?.disconnect();
-                    this.socket = null;
-                    this.peerPing = new PeerPing(this.dataChannel as EventDataChannel,
-                        () => this.reenterChat("peer ping timeout"));
-                    this.peerPing.start();
+                    this.onReadyToChat();
                 }
             }
         });
@@ -140,19 +133,23 @@ export default class Chat {
         });
     }
 
+    private onReadyToChat() {
+        this.state = ChatState.READY_TO_CHAT;
+        (this.signalingPing as SocketPing).stop();
+        this.signalingPing = null;
+        this.socket?.disconnect();
+        this.socket = null;
+        this.peerPing = new PeerPing(this.dataChannel as EventDataChannel,
+            () => this.reenterChat("peer ping timeout"));
+        this.peerPing.start();
+    }
+
     private addDataChannelEvents(): void {
         this.dataChannel?.addEventListener("open", () => {
             if (this.state !== ChatState.PEERS_CONNECTED) {
                 this.state = ChatState.DATA_CHANNEL_OPEN;
             } else {
-                this.state = ChatState.READY_TO_CHAT;
-                (this.signalingPing as SocketPing).stop();
-                this.signalingPing = null;
-                this.socket?.disconnect();
-                this.socket = null;
-                this.peerPing = new PeerPing(this.dataChannel as EventDataChannel,
-                    () => this.reenterChat("peer ping timeout"));
-                this.peerPing.start();
+                this.onReadyToChat();
             }
             this.dataChannel?.send("Hello world!");
         });
