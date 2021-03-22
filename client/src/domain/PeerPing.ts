@@ -10,17 +10,6 @@ export default class PeerPing extends SocketPing {
     constructor(readonly dataChannel: EventDataChannel, timeoutCallback: Function) {
         // @ts-ignore
         super(null, timeoutCallback);
-        this.addListeners();
-    }
-
-    private addListeners() {
-        this.dataChannel.addEventListener("peerPingRequest", (event) => {
-            this.dataChannel.send(PeerPing.PING_RESPONSE_TAG + this.extractPingToken((event as MessageEvent).data));
-        });
-
-        this.dataChannel.addEventListener("peerPingResponse", (event) => {
-            this.resetPing(this.extractPingResponseToken((event as MessageEvent).data));
-        });
     }
 
     // eslint-disable-next-line
@@ -33,12 +22,18 @@ export default class PeerPing extends SocketPing {
         return typeof data === "string" && !!data.length && data.startsWith(PeerPing.PING_RESPONSE_TAG);
     }
 
-    protected getPingName(): string {
-        return "peer";
+    protected addListeners() {
+        this.dataChannel.addEventListener("peerPingRequest", (event) => {
+            this.dataChannel.send(PeerPing.PING_RESPONSE_TAG + this.extractPingToken((event as MessageEvent).data));
+        });
+
+        this.dataChannel.addEventListener("peerPingResponse", (event) => {
+            this.resetPing(this.extractPingResponseToken((event as MessageEvent).data));
+        });
     }
 
-    protected setResponseListener(): void {
-        // do nothing
+    protected getPingName(): string {
+        return "peer";
     }
 
     protected emitPing(): void {

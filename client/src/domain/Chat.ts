@@ -36,10 +36,6 @@ export default class Chat {
             console.info(`Matched with id: ${matchId}`);
             this.state = ChatState.SIGNALING;
 
-            this.socket?.on("signalingPingRequest", (token: string) => {
-                this.socket?.emit("signalingPingResponse", token);
-            });
-
             this.signalingPing = new SocketPing(this.socket as Socket, () => this.reenterChat("socket ping timeout"));
             this.signalingPing.start();
         });

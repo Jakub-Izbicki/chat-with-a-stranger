@@ -17,6 +17,7 @@ export default class SocketPing {
     }
 
     public start(): void {
+        this.addListeners();
         this.sendPing();
     }
 
@@ -24,13 +25,16 @@ export default class SocketPing {
         this.stopPing();
     }
 
-    protected getPingName(): string {
-        return "signaling";
+    protected addListeners() {
+        this.socket?.on("signalingPingRequest", (token: string) => {
+            this.socket?.emit("signalingPingResponse", token);
+        });
+
+        this.socket?.on("signalingPingResponse", (token: string) => this.resetPing(token));
     }
 
-    protected setResponseListener(): void {
-        this.socket?.off("signalingPingResponse", (token: string) => this.resetPing(token));
-        this.socket?.on("signalingPingResponse", (token: string) => this.resetPing(token));
+    protected getPingName(): string {
+        return "signaling";
     }
 
     protected emitPing(): void {
@@ -52,7 +56,6 @@ export default class SocketPing {
 
         this.pingToken = uuid4();
         console.info(`Sending ${this.getPingName()} ping: ${this.pingToken}`);
-        this.setResponseListener();
         this.emitPing();
 
         this.pingTimeout = setTimeout(() => this.timeoutCallback(), this.PING_TIMEOUT);
