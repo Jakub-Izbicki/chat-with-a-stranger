@@ -131,10 +131,6 @@ export default class Chat {
                         () => this.reenterChat("peer ping timeout"));
                     this.peerPing.start();
                 }
-
-                //todo: remove this?
-                // this.socket?.emit("pairconnected");
-                // this.socket = null;
             }
         });
 

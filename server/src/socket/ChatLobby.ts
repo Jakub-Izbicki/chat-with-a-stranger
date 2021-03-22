@@ -19,8 +19,6 @@ export default class ChatLobby {
 
     private readonly ICE_EVENT = "icecandidate";
 
-    private readonly PAIR_CONNECTED_EVENT = "pairconnected";
-
     private waitingGuests = new Array<LobbyGuest>();
 
     private signalingGuests = new Array<SignalingGuestsPair>();
@@ -102,7 +100,6 @@ export default class ChatLobby {
             answeringGuest.socket.emit(this.OFFER_EVENT, offer);
         });
         this.addIceCandidateEvent(offeringGuest, answeringGuest);
-        this.addPairConnectedEvent(offeringGuest);
     }
 
     private addAnsweringGuestEvents(answeringGuest: LobbyGuest, offeringGuest: LobbyGuest): void {
@@ -112,7 +109,6 @@ export default class ChatLobby {
             offeringGuest.socket.emit(this.ANSWER_EVENT, offer);
         });
         this.addIceCandidateEvent(answeringGuest, offeringGuest);
-        this.addPairConnectedEvent(answeringGuest);
     }
 
     private addSignalingPingRequestEvent(sendingGuest: LobbyGuest,
@@ -132,13 +128,6 @@ export default class ChatLobby {
     private addIceCandidateEvent(sendingGuest: LobbyGuest, receivingGuest: LobbyGuest): void {
         sendingGuest.socket.on(this.ICE_EVENT, (icecandidate) => {
             receivingGuest.socket.emit(this.ICE_EVENT, icecandidate);
-        });
-    }
-
-    // todo: remove this unused method
-    private addPairConnectedEvent(sendingGuest: LobbyGuest): void {
-        sendingGuest.socket.on(this.PAIR_CONNECTED_EVENT, () => {
-            this.removeGuestFromLobby(sendingGuest);
         });
     }
 
