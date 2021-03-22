@@ -2,6 +2,7 @@ import {io, Socket} from "socket.io-client";
 import {ChatState} from "@/domain/ChatState";
 import SocketPing from "@/domain/SocketPing";
 import PeerPing from "@/domain/PeerPing";
+import EventDataChannel from "@/domain/EventDataChannel";
 
 export default class Chat {
 
@@ -9,7 +10,7 @@ export default class Chat {
 
     private peerConnection: RTCPeerConnection | null = null;
 
-    private dataChannel: RTCDataChannel | null = null;
+    private dataChannel: EventDataChannel | null = null;
 
     private signalingPing: SocketPing | null = null;
 
@@ -45,7 +46,8 @@ export default class Chat {
 
         this.socket?.on("offer-request", async () => {
             console.info("Creating data channel");
-            this.dataChannel = (this.peerConnection as RTCPeerConnection).createDataChannel("dataChannel");
+            const dataChannel = (this.peerConnection as RTCPeerConnection).createDataChannel("dataChannel");
+            this.dataChannel = new EventDataChannel(dataChannel);
             this.addDataChannelEvents();
 
             console.info("Creating offer");
@@ -129,7 +131,8 @@ export default class Chat {
                     this.signalingPing = null;
                     this.socket?.disconnect();
                     this.socket = null;
-                    this.peerPing = new PeerPing(this.dataChannel as RTCDataChannel, () => this.reenterChat("peer ping timeout"));
+                    this.peerPing = new PeerPing(this.dataChannel as EventDataChannel,
+                        () => this.reenterChat("peer ping timeout"));
                     this.peerPing.start();
                 }
 
@@ -140,7 +143,7 @@ export default class Chat {
         });
 
         this.peerConnection.addEventListener("datachannel", (event: RTCDataChannelEvent) => {
-            this.dataChannel = event.channel;
+            this.dataChannel = new EventDataChannel(event.channel);
             this.addDataChannelEvents();
         });
     }
@@ -155,7 +158,8 @@ export default class Chat {
                 this.signalingPing = null;
                 this.socket?.disconnect();
                 this.socket = null;
-                this.peerPing = new PeerPing(this.dataChannel as RTCDataChannel, () => this.reenterChat("peer ping timeout"));
+                this.peerPing = new PeerPing(this.dataChannel as EventDataChannel,
+                    () => this.reenterChat("peer ping timeout"));
                 this.peerPing.start();
             }
             this.dataChannel?.send("Hello world!");
@@ -165,15 +169,8 @@ export default class Chat {
             this.reenterChat("data channel closed");
         });
 
-        this.dataChannel?.addEventListener("message", (event: MessageEvent) => {
-            if (PeerPing.isPingMsg(event.data)) {
-                (this.dataChannel as RTCDataChannel)
-                    .send(PeerPing.PING_RESPONSE_TAG + PeerPing.extractPingToken(event.data));
-            } else if (PeerPing.isPingResponseMsg(event.data)) {
-                (this.peerPing as PeerPing).reset(PeerPing.extractPingResponseToken(event.data));
-            } else {
-                console.info(event.data);
-            }
+        this.dataChannel?.addEventListener("chatMessage", (event) => {
+            console.info((event as MessageEvent).data);
         });
     }
 

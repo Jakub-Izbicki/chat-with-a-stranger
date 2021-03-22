@@ -1,4 +1,5 @@
 import SocketPing from "@/domain/SocketPing";
+import EventDataChannel from "@/domain/EventDataChannel";
 
 export default class PeerPing extends SocketPing {
 
@@ -6,13 +7,20 @@ export default class PeerPing extends SocketPing {
 
     private static readonly PING_TAG = "-RTC PEER PING-";
 
-    constructor(readonly dataChannel: RTCDataChannel, timeoutCallback: Function) {
+    constructor(readonly dataChannel: EventDataChannel, timeoutCallback: Function) {
         // @ts-ignore
         super(null, timeoutCallback);
+        this.addListeners();
     }
 
-    public reset(token: string): void {
-        this.resetPing(token);
+    private addListeners() {
+        this.dataChannel.addEventListener("peerPingRequest", (event) => {
+            this.dataChannel.send(PeerPing.PING_RESPONSE_TAG + this.extractPingToken((event as MessageEvent).data));
+        });
+
+        this.dataChannel.addEventListener("peerPingResponse", (event) => {
+            this.resetPing(this.extractPingResponseToken((event as MessageEvent).data));
+        });
     }
 
     // eslint-disable-next-line
@@ -25,14 +33,6 @@ export default class PeerPing extends SocketPing {
         return typeof data === "string" && !!data.length && data.startsWith(PeerPing.PING_RESPONSE_TAG);
     }
 
-    public static extractPingToken(pingMsg: string): string {
-        return pingMsg.replace(PeerPing.PING_TAG, "");
-    }
-
-    public static extractPingResponseToken(pingMsg: string): string {
-        return pingMsg.replace(PeerPing.PING_RESPONSE_TAG, "");
-    }
-
     protected getPingName(): string {
         return "peer";
     }
@@ -43,5 +43,13 @@ export default class PeerPing extends SocketPing {
 
     protected emitPing(): void {
         this.dataChannel.send(PeerPing.PING_TAG + this.pingToken);
+    }
+
+    private extractPingToken(pingMsg: string): string {
+        return pingMsg.replace(PeerPing.PING_TAG, "");
+    }
+
+    private extractPingResponseToken(pingMsg: string): string {
+        return pingMsg.replace(PeerPing.PING_RESPONSE_TAG, "");
     }
 }
