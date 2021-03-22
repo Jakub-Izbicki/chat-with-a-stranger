@@ -1,9 +1,9 @@
 <template>
   <div>
-    <p>Server status: {{ serverStatus }} {{ tick }}</p>
-    <p>Server env: {{ serverEnv }}</p>
-    <p v-if="chatLobby">{{ chatState }}</p>
-    <p v-for="(msg, i) in messages" :key="i">{{ msg }}</p>
+    <p v-if="chatLobby" class="p-3">{{ chatState }}</p>
+    <ul class="text-xs">
+      <li v-for="(msg, i) in messages" :key="i">{{ `> ${i}. ${msg}` }}</li>
+    </ul>
   </div>
 </template>
 
@@ -11,17 +11,14 @@
 import {Component, Vue} from "vue-property-decorator";
 import Chat from "@/domain/Chat";
 import {ChatState} from "@/domain/ChatState";
+import Logger from "@/domain/Logger";
 
 @Component
 export default class Home extends Vue {
 
-  private serverStatus = "?";
-
-  private serverEnv = "?";
-
   private tick = "/";
 
-  private messages = new Array<string>();
+  private messages = Logger.getInstance().getMessages();
 
   private chatLobby: Chat | null = null;
 
