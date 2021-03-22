@@ -3,6 +3,7 @@ import {ChatState} from "@/domain/ChatState";
 import SocketPing from "@/domain/SocketPing";
 import PeerPing from "@/domain/PeerPing";
 import EventDataChannel from "@/domain/EventDataChannel";
+import Logger from "@/domain/Logger";
 
 export default class Chat {
 
@@ -23,7 +24,7 @@ export default class Chat {
         this.initPeerConnection();
 
         this.socket?.on("connect", () => {
-            console.info(`Entered lobby. My id: ${this.socket?.id}`);
+            Logger.info(`Entered lobby. My id: ${this.socket?.id}`);
         });
 
         this.socket?.on("disconnect", () => {
@@ -33,7 +34,7 @@ export default class Chat {
         });
 
         this.socket?.on("match", (matchId: string) => {
-            console.info(`Matched with id: ${matchId}`);
+            Logger.info(`Matched with id: ${matchId}`);
             this.state = ChatState.SIGNALING;
 
             this.signalingPing = new SocketPing(this.socket as Socket, () => this.reenterChat("socket ping timeout"));
@@ -41,19 +42,19 @@ export default class Chat {
         });
 
         this.socket?.on("offer-request", async () => {
-            console.info("Creating data channel");
+            Logger.info("Creating data channel");
             const dataChannel = (this.peerConnection as RTCPeerConnection).createDataChannel("dataChannel");
             this.dataChannel = new EventDataChannel(dataChannel);
             this.addDataChannelEvents();
 
-            console.info("Creating offer");
+            Logger.info("Creating offer");
             const offer = await this.peerConnection?.createOffer();
             await this.peerConnection?.setLocalDescription(offer as RTCSessionDescriptionInit);
             this.socket?.emit("offer", offer as RTCSessionDescriptionInit);
         });
 
         this.socket?.on("offer", async (offer: RTCSessionDescriptionInit) => {
-            console.info("Received offer");
+            Logger.info("Received offer");
             this.peerConnection?.setRemoteDescription(offer);
             const answer = await this.peerConnection?.createAnswer();
             await this.peerConnection?.setLocalDescription(answer as RTCSessionDescriptionInit);
@@ -61,18 +62,18 @@ export default class Chat {
         });
 
         this.socket?.on("answer", async (answer: RTCSessionDescriptionInit) => {
-            console.info(`Received answer`);
+            Logger.info(`Received answer`);
             await this.peerConnection?.setRemoteDescription(new RTCSessionDescription(answer));
         });
 
         this.socket?.on("icecandidate", async (icecandidate: RTCIceCandidate) => {
-            console.info(`Received icecandidate`);
+            Logger.info(`Received icecandidate`);
             await this.peerConnection?.addIceCandidate(icecandidate);
         });
     }
 
     public leaveChat(reason: string): void {
-        console.info(`Leaving chat, reason: ${reason}`);
+        Logger.info(`Leaving chat, reason: ${reason}`);
         this.signalingPing?.stop();
         this.signalingPing = null;
         this.peerPing?.stop();
@@ -111,14 +112,14 @@ export default class Chat {
 
         this.peerConnection.addEventListener("icecandidate", event => {
             if (event.candidate) {
-                console.info("Sending icecandidate");
+                Logger.info("Sending icecandidate");
                 this.socket?.emit("icecandidate", event.candidate);
             }
         });
 
         this.peerConnection.addEventListener("connectionstatechange", () => {
             if (this.peerConnection?.connectionState === "connected") {
-                console.info("Pair connected");
+                Logger.info("Pair connected");
                 if (this.state !== ChatState.DATA_CHANNEL_OPEN) {
                     this.state = ChatState.PEERS_CONNECTED;
                 } else {
@@ -159,7 +160,7 @@ export default class Chat {
         });
 
         this.dataChannel?.addEventListener("chatMessage", (event) => {
-            console.info((event as MessageEvent).data);
+            Logger.info((event as MessageEvent).data);
         });
     }
 
