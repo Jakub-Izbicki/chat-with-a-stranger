@@ -2,7 +2,7 @@
   <div>
     <p v-if="chatLobby" class="p-3">{{ chatState }}</p>
     <ul class="text-xs">
-      <li v-for="(msg, i) in messages" :key="i">{{ `> ${i}. ${msg}` }}</li>
+      <li v-for="(logMsg) in logMessages" :key="logMsg.id">{{ `> ${logMsg.index}. ${logMsg.msg}` }}</li>
     </ul>
   </div>
 </template>
@@ -16,9 +16,7 @@ import Logger from "@/domain/Logger";
 @Component
 export default class Home extends Vue {
 
-  private tick = "/";
-
-  private messages = Logger.getInstance().getMessages();
+  private logMessages = Logger.getInstance().getMessages();
 
   private chatLobby: Chat | null = null;
 
@@ -33,14 +31,6 @@ export default class Home extends Vue {
 
   get chatState(): string {
     return ChatState[this.chatLobby?.state as ChatState];
-  }
-
-  private updateTick(): void {
-    if (this.tick === "/") {
-      this.tick = "\\";
-    } else {
-      this.tick = "/";
-    }
   }
 }
 </script>
