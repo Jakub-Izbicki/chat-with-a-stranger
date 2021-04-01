@@ -8,7 +8,8 @@ export class LogMsg {
 
     readonly index: number;
 
-    constructor(readonly msg: string) {
+    constructor(readonly msg: string,
+                readonly color: string) {
         this.id = uuid4();
         this.index = LogMsg.COUNT++;
     }
@@ -29,12 +30,24 @@ export default class Logger {
     }
 
     public static info(msg: string): void {
-        this.getInstance().log(msg);
+        Logger.log(new LogMsg(msg, "log-info"));
     }
 
-    public log(msg: string): void {
-        console.info(msg);
-        this.messages.unshift(new LogMsg(msg));
+    public static success(msg: string): void {
+        Logger.log(new LogMsg(msg, "log-success"));
+    }
+
+    public static warn(msg: string): void {
+        Logger.log(new LogMsg(msg, "log-warn"));
+    }
+
+    public static error(msg: string): void {
+        Logger.log(new LogMsg(msg, "log-error"));
+    }
+
+    private static log(msg: LogMsg): void {
+        console.info(msg.msg);
+        Logger.getInstance().messages.unshift(msg);
     }
 
     public getMessages(): LogMsg[] {

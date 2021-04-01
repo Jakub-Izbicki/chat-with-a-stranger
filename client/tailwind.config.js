@@ -7,7 +7,10 @@ module.exports = {
                 "card-incorrect": "0 0 2px 5px #d40000"
             },
             colors: {
-                dark: "#363636"
+                "log-success": "#00b105",
+                "log-info": "#295372",
+                "log-warn": "#aba200",
+                "log-error": "#b70000",
             },
             fontFamily: {
                 'fancy': ['FancyFont', 'Avenir', 'Helvetica', 'Arial', 'sans-serif'],

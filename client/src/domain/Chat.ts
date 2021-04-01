@@ -24,7 +24,7 @@ export default class Chat {
         this.initPeerConnection();
 
         this.socket?.on("connect", () => {
-            Logger.info(`Entered lobby. My id: ${this.socket?.id}`);
+            Logger.warn(`Entered lobby. My id: ${this.socket?.id}`);
         });
 
         this.socket?.on("disconnect", () => {
@@ -34,7 +34,7 @@ export default class Chat {
         });
 
         this.socket?.on("match", (matchId: string) => {
-            Logger.info(`Matched with id: ${matchId}`);
+            Logger.success(`Matched with id: ${matchId}`);
             this.state = ChatState.SIGNALING;
 
             this.signalingPing = new SocketPing(this.socket as Socket, () => this.reenterChat("socket ping timeout"));
@@ -73,7 +73,7 @@ export default class Chat {
     }
 
     public leaveChat(reason: string): void {
-        Logger.info(`Leaving chat, reason: ${reason}`);
+        Logger.error(`Leaving chat, reason: ${reason}`);
         this.signalingPing?.stop();
         this.signalingPing = null;
         this.peerPing?.stop();
@@ -119,7 +119,7 @@ export default class Chat {
 
         this.peerConnection.addEventListener("connectionstatechange", () => {
             if (this.peerConnection?.connectionState === "connected") {
-                Logger.info("Pair connected");
+                Logger.info("Peers connected");
                 if (this.state !== ChatState.DATA_CHANNEL_OPEN) {
                     this.state = ChatState.PEERS_CONNECTED;
                 } else {
@@ -135,6 +135,7 @@ export default class Chat {
     }
 
     private onReadyToChat() {
+        Logger.success("Ready to chat");
         this.state = ChatState.READY_TO_CHAT;
         (this.signalingPing as SocketPing).stop();
         this.signalingPing = null;
@@ -147,6 +148,7 @@ export default class Chat {
 
     private addDataChannelEvents(): void {
         this.dataChannel?.addEventListener("open", () => {
+            Logger.info("Data channel open");
             if (this.state !== ChatState.PEERS_CONNECTED) {
                 this.state = ChatState.DATA_CHANNEL_OPEN;
             } else {

@@ -2,7 +2,9 @@
   <div>
     <p v-if="chatLobby" class="p-3">{{ chatState }}</p>
     <ul class="text-xs">
-      <li v-for="(logMsg) in logMessages" :key="logMsg.id">{{ `> ${logMsg.index}. ${logMsg.msg}` }}</li>
+      <li v-for="(logMsg) in logMessages" :key="logMsg.id" :class="`text-${logMsg.color}`">
+        {{ `> ${logMsg.index}. ${logMsg.msg}` }}
+      </li>
     </ul>
   </div>
 </template>
