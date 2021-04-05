@@ -49,8 +49,14 @@ export default class ChatLobby {
 
     private removeTimeoutedPairs() {
         const latestDateAllowed = moment().subtract(5, "seconds");
-        this.signalingGuests =
-            this.signalingGuests.filter(pair => pair.creationDate.isAfter(latestDateAllowed));
+        const isTimeouted = (pair: SignalingGuestsPair) => pair.creationDate.isBefore(latestDateAllowed);
+
+        this.signalingGuests.filter(isTimeouted)
+            .forEach(pair => {
+                // method also removes second guest
+                this.removeGuestFromLobby(pair.first);
+            });
+
         this.logRemaining();
     }
 
