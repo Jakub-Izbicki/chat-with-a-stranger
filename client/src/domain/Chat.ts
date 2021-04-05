@@ -156,7 +156,8 @@ export default class Chat {
         (this.signalingPing as SocketPing).stop();
         this.signalingPing = null;
         this.removeSocketListeners();
-        this.socket?.disconnect();
+        // todo: think of some way to correctly disconnect when signaling channel no longer needed
+        // this.socket?.disconnect();
         this.socket = null;
         this.peerPing = new PeerPing(this.dataChannel as EventDataChannel,
             () => this.reenterChat("peer ping timeout"));
