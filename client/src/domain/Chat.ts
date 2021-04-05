@@ -1,4 +1,5 @@
 import {io, Socket} from "socket.io-client";
+import {v4 as uuid4} from "uuid";
 import {ChatState} from "@/domain/ChatState";
 import SocketPing from "@/domain/SocketPing";
 import PeerPing from "@/domain/PeerPing";
@@ -6,6 +7,20 @@ import EventDataChannel from "@/domain/EventDataChannel";
 import Logger from "@/domain/Logger";
 
 export default class Chat {
+
+    private static readonly CONNECT = "connect";
+
+    private static readonly DISCONNECT = "disconnect";
+
+    private static readonly MATCH = "match";
+
+    private static readonly OFFER_REQUEST = "offer-request";
+
+    private static readonly OFFER = "offer";
+
+    private static readonly ANSWER = "answer";
+
+    private static readonly ICECANDIDATE = "icecandidate";
 
     private socket: Socket | null = null;
 
@@ -23,17 +38,17 @@ export default class Chat {
         this.initSocket();
         this.initPeerConnection();
 
-        this.socket?.on("connect", () => {
+        this.socket?.on(Chat.CONNECT, () => {
             Logger.warn(`Entered lobby. My id: ${this.socket?.id}`);
         });
 
-        this.socket?.on("disconnect", () => {
+        this.socket?.on(Chat.DISCONNECT, () => {
             if (this.state !== ChatState.READY_TO_CHAT) {
                 this.reenterChat("socket disconnect");
             }
         });
 
-        this.socket?.on("match", (matchId: string) => {
+        this.socket?.on(Chat.MATCH, (matchId: string) => {
             Logger.success(`Matched with id: ${matchId}`);
             this.state = ChatState.SIGNALING;
 
@@ -41,9 +56,9 @@ export default class Chat {
             this.signalingPing.start();
         });
 
-        this.socket?.on("offer-request", async () => {
+        this.socket?.on(Chat.OFFER_REQUEST, async () => {
             Logger.info("Creating data channel");
-            const dataChannel = (this.peerConnection as RTCPeerConnection).createDataChannel("dataChannel");
+            const dataChannel = (this.peerConnection as RTCPeerConnection).createDataChannel(`dataChannel-${uuid4()}`);
             this.dataChannel = new EventDataChannel(dataChannel);
             this.addDataChannelEvents();
 
@@ -53,7 +68,7 @@ export default class Chat {
             this.socket?.emit("offer", offer as RTCSessionDescriptionInit);
         });
 
-        this.socket?.on("offer", async (offer: RTCSessionDescriptionInit) => {
+        this.socket?.on(Chat.OFFER, async (offer: RTCSessionDescriptionInit) => {
             Logger.info("Received offer");
             this.peerConnection?.setRemoteDescription(offer);
             const answer = await this.peerConnection?.createAnswer();
@@ -61,12 +76,12 @@ export default class Chat {
             this.socket?.emit("answer", answer as RTCSessionDescriptionInit);
         });
 
-        this.socket?.on("answer", async (answer: RTCSessionDescriptionInit) => {
+        this.socket?.on(Chat.ANSWER, async (answer: RTCSessionDescriptionInit) => {
             Logger.info(`Received answer`);
             await this.peerConnection?.setRemoteDescription(new RTCSessionDescription(answer));
         });
 
-        this.socket?.on("icecandidate", async (icecandidate: RTCIceCandidate) => {
+        this.socket?.on(Chat.ICECANDIDATE, async (icecandidate: RTCIceCandidate) => {
             Logger.info(`Received icecandidate`);
             await this.peerConnection?.addIceCandidate(icecandidate);
         });
@@ -78,7 +93,7 @@ export default class Chat {
         this.signalingPing = null;
         this.peerPing?.stop();
         this.peerPing = null;
-
+        this.removeSocketListeners();
         this.socket?.disconnect();
         this.socket = null;
         this.peerConnection?.close();
@@ -129,6 +144,7 @@ export default class Chat {
         });
 
         this.peerConnection.addEventListener("datachannel", (event: RTCDataChannelEvent) => {
+            Logger.info("Data channel received");
             this.dataChannel = new EventDataChannel(event.channel);
             this.addDataChannelEvents();
         });
@@ -139,6 +155,7 @@ export default class Chat {
         this.state = ChatState.READY_TO_CHAT;
         (this.signalingPing as SocketPing).stop();
         this.signalingPing = null;
+        this.removeSocketListeners();
         this.socket?.disconnect();
         this.socket = null;
         this.peerPing = new PeerPing(this.dataChannel as EventDataChannel,
@@ -147,6 +164,7 @@ export default class Chat {
     }
 
     private addDataChannelEvents(): void {
+        // todo: remove listeners when leaving chat
         this.dataChannel?.addEventListener("open", () => {
             Logger.info("Data channel open");
             if (this.state !== ChatState.PEERS_CONNECTED) {
@@ -169,5 +187,25 @@ export default class Chat {
     private reenterChat(reason: string): void {
         this.leaveChat(reason);
         this.enterChat();
+    }
+
+    private removeSocketListeners() {
+        this.socketListenerOff(Chat.CONNECT);
+        this.socketListenerOff(Chat.DISCONNECT);
+        this.socketListenerOff(Chat.MATCH);
+        this.socketListenerOff(Chat.OFFER_REQUEST);
+        this.socketListenerOff(Chat.OFFER);
+        this.socketListenerOff(Chat.ANSWER);
+        this.socketListenerOff(Chat.ICECANDIDATE);
+    }
+
+    private socketListenerOff(event: string): void {
+        if (!this.socket) {
+            return;
+        }
+
+        this.socket.listeners(event).forEach(listener => {
+            this.socket?.off(event, listener);
+        });
     }
 }
