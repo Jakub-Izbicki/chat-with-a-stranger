@@ -1,6 +1,6 @@
 import {v4 as uuid4} from "uuid";
 import {Socket} from "socket.io-client";
-import Logger from "@/domain/Logger";
+// import Logger from "@/domain/Logger";
 
 export default class SocketPing {
 
@@ -34,16 +34,16 @@ export default class SocketPing {
         this.socket?.on("signalingPingResponse", (token: string) => this.resetPing(token));
     }
 
-    protected getPingName(): string {
-        return "signaling";
-    }
+    // protected getPingName(): string {
+    //     return "signaling";
+    // }
 
     protected emitPing(): void {
         this.socket?.emit("signalingPingRequest", this.pingToken);
     }
 
     protected resetPing(token: string): void {
-        Logger.info(`Received ${this.getPingName()} ping token: ${token}`);
+        // Logger.info(`Received ${this.getPingName()} ping token: ${token}`);
         if (this.pingToken === token) {
             clearTimeout(this.pingTimeout as number);
             this.pingInterval = setTimeout(() => this.sendPing(), this.PING_INTERVAL);
@@ -56,7 +56,7 @@ export default class SocketPing {
         }
 
         this.pingToken = uuid4();
-        Logger.info(`Sending ${this.getPingName()} ping: ${this.pingToken}`);
+        // Logger.info(`Sending ${this.getPingName()} ping: ${this.pingToken}`);
         this.emitPing();
 
         this.pingTimeout = setTimeout(() => this.timeoutCallback(), this.PING_TIMEOUT);
