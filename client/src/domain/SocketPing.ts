@@ -4,9 +4,9 @@ import {Socket} from "socket.io-client";
 
 export default class SocketPing {
 
-    private readonly PING_TIMEOUT = 2000;
+    private readonly PING_TIMEOUT = 4000;
 
-    private readonly PING_INTERVAL = 1000;
+    private readonly PING_INTERVAL = 500;
 
     protected pingToken: string | null = null;
 
