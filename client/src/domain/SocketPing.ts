@@ -46,8 +46,8 @@ export default class SocketPing {
     }
 
     protected resetPing(token: string): void {
-        Logger.info(
-            `Got ${this.getPingName()} ping response: ${token}, after ${moment().diff(this.pingTime, "milliseconds")}ms`);
+        // Logger.info(
+        //     `Got ${this.getPingName()} ping response: ${token}, after ${moment().diff(this.pingTime, "milliseconds")}ms`);
 
         if (this.pingToken === token) {
             clearTimeout(this.pingTimeout as number);

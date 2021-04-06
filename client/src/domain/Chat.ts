@@ -34,12 +34,16 @@ export default class Chat extends EventTarget {
 
     public state = ChatState.IDLE;
 
+    constructor(readonly name: string) {
+        super();
+    }
+
     public enterChat(): void {
         this.initSocket();
         this.initPeerConnection();
 
         this.socket?.on(Chat.CONNECT, () => {
-            Logger.warn(`Entered lobby. My id: ${this.socket?.id}`);
+            Logger.warn(`${this.name} - Entered lobby. My id: ${this.socket?.id}`);
         });
 
         this.socket?.on(Chat.DISCONNECT, () => {
@@ -49,27 +53,27 @@ export default class Chat extends EventTarget {
         });
 
         this.socket?.on(Chat.MATCH, (matchId: string) => {
-            Logger.success(`Matched with id: ${matchId}`);
+            Logger.success(`${this.name} - Matched with id: ${matchId}`);
             this.state = ChatState.SIGNALING;
 
-            this.socketPing = new SocketPing(this.socket as Socket, () => this.leaveChat("socket ping timeout"));
+            this.socketPing = new SocketPing(this.socket as Socket, () => this.leaveChat(`${this.name} - socket ping timeout`));
             this.socketPing.start();
         });
 
         this.socket?.on(Chat.OFFER_REQUEST, async () => {
-            Logger.info("Creating data channel");
+            Logger.info(`${this.name} - Creating data channel`);
             const dataChannel = (this.peerConnection as RTCPeerConnection).createDataChannel(`dataChannel-${uuid4()}`);
             this.dataChannel = new EventDataChannel(dataChannel);
             this.addDataChannelEvents();
 
-            Logger.info("Creating offer");
+            Logger.info(`${this.name} - Creating offer`);
             const offer = await this.peerConnection?.createOffer();
             await this.peerConnection?.setLocalDescription(offer as RTCSessionDescriptionInit);
             this.socket?.emit("offer", offer as RTCSessionDescriptionInit);
         });
 
         this.socket?.on(Chat.OFFER, async (offer: RTCSessionDescriptionInit) => {
-            Logger.info("Received offer");
+            Logger.info(`${this.name} - Received offer`);
             this.peerConnection?.setRemoteDescription(offer);
             const answer = await this.peerConnection?.createAnswer();
             await this.peerConnection?.setLocalDescription(answer as RTCSessionDescriptionInit);
@@ -77,18 +81,18 @@ export default class Chat extends EventTarget {
         });
 
         this.socket?.on(Chat.ANSWER, async (answer: RTCSessionDescriptionInit) => {
-            Logger.info(`Received answer`);
+            Logger.info(`${this.name} - Received answer`);
             await this.peerConnection?.setRemoteDescription(new RTCSessionDescription(answer));
         });
 
         this.socket?.on(Chat.ICECANDIDATE, async (icecandidate: RTCIceCandidate) => {
-            Logger.info(`Received icecandidate`);
+            Logger.info(`${this.name} - Received icecandidate`);
             await this.peerConnection?.addIceCandidate(icecandidate);
         });
     }
 
     private doLeaveChat(reason: string): void {
-        Logger.error(`Leaving chat, reason: ${reason}`);
+        Logger.error(`${this.name} - Leaving chat, reason: ${reason}`);
         this.socketPing?.stop();
         this.socketPing = null;
         this.peerPing?.stop();
@@ -127,14 +131,14 @@ export default class Chat extends EventTarget {
 
         this.peerConnection.addEventListener("icecandidate", event => {
             if (event.candidate) {
-                Logger.info("Sending icecandidate");
+                Logger.info(`${this.name} - Sending icecandidate`);
                 this.socket?.emit("icecandidate", event.candidate);
             }
         });
 
         this.peerConnection.addEventListener("connectionstatechange", () => {
             if (this.peerConnection?.connectionState === "connected") {
-                Logger.info("Peers connected");
+                Logger.info(`${this.name} - Peers connected`);
                 if (this.state !== ChatState.DATA_CHANNEL_OPEN) {
                     this.state = ChatState.PEERS_CONNECTED;
                 } else {
@@ -144,14 +148,14 @@ export default class Chat extends EventTarget {
         });
 
         this.peerConnection.addEventListener("datachannel", (event: RTCDataChannelEvent) => {
-            Logger.info("Data channel received");
+            Logger.info(`${this.name} - Data channel received`);
             this.dataChannel = new EventDataChannel(event.channel);
             this.addDataChannelEvents();
         });
     }
 
     private onReadyToChat() {
-        Logger.success("Ready to chat");
+        Logger.success(`${this.name} - Ready to chat`);
         this.state = ChatState.READY_TO_CHAT;
         (this.socketPing as SocketPing).stop();
         this.socketPing = null;
@@ -160,14 +164,14 @@ export default class Chat extends EventTarget {
         // this.socket?.disconnect();
         this.socket = null;
         this.peerPing = new PeerPing(this.dataChannel as EventDataChannel,
-            () => this.leaveChat("peer ping timeout"));
+            () => this.leaveChat(`${this.name} - peer ping timeout`));
         this.peerPing.start();
     }
 
     private addDataChannelEvents(): void {
         // todo: remove listeners when leaving chat
         this.dataChannel?.addEventListener("open", () => {
-            Logger.info("Data channel open");
+            Logger.info(`${this.name} - Data channel open`);
             if (this.state !== ChatState.PEERS_CONNECTED) {
                 this.state = ChatState.DATA_CHANNEL_OPEN;
             } else {
@@ -181,7 +185,7 @@ export default class Chat extends EventTarget {
         });
 
         this.dataChannel?.addEventListener("chatMessage", (event) => {
-            Logger.info((event as MessageEvent).data);
+            Logger.info(`${this.name} - ${(event as MessageEvent).data}`);
         });
     }
 

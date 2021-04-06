@@ -11,6 +11,7 @@
 
 <script lang="ts">
 import {Component, Vue} from "vue-property-decorator";
+import {v4 as uuid4} from "uuid";
 import Chat from "@/domain/Chat";
 import {ChatState} from "@/domain/ChatState";
 import Logger from "@/domain/Logger";
@@ -35,7 +36,7 @@ export default class Home extends Vue {
   }
 
   private reenterChat(): void {
-    this.chatLobby = new Chat();
+    this.chatLobby = new Chat(uuid4()[0]);
     this.chatLobby.addEventListener("leave", () => this.reenterChat());
     this.chatLobby.enterChat();
   }
