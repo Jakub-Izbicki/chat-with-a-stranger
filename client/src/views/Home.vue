@@ -23,16 +23,21 @@ export default class Home extends Vue {
   private chatLobby: Chat | null = null;
 
   mounted() {
-    this.chatLobby = new Chat();
-    this.chatLobby.enterChat();
+    this.reenterChat();
   }
 
   beforeDestroy() {
-    this.chatLobby?.leaveChat("component being destroyed");
+    this.chatLobby = null;
   }
 
   get chatState(): string {
     return ChatState[this.chatLobby?.state as ChatState];
+  }
+
+  private reenterChat(): void {
+    this.chatLobby = new Chat();
+    this.chatLobby.addEventListener("leave", () => this.reenterChat());
+    this.chatLobby.enterChat();
   }
 }
 </script>

@@ -6,7 +6,7 @@ import PeerPing from "@/domain/PeerPing";
 import EventDataChannel from "@/domain/EventDataChannel";
 import Logger from "@/domain/Logger";
 
-export default class Chat {
+export default class Chat extends EventTarget {
 
     private static readonly CONNECT = "connect";
 
@@ -44,7 +44,7 @@ export default class Chat {
 
         this.socket?.on(Chat.DISCONNECT, () => {
             if (this.state !== ChatState.READY_TO_CHAT) {
-                this.reenterChat("socket disconnect");
+                this.leaveChat("socket disconnect");
             }
         });
 
@@ -52,7 +52,7 @@ export default class Chat {
             Logger.success(`Matched with id: ${matchId}`);
             this.state = ChatState.SIGNALING;
 
-            this.socketPing = new SocketPing(this.socket as Socket, () => this.reenterChat("socket ping timeout"));
+            this.socketPing = new SocketPing(this.socket as Socket, () => this.leaveChat("socket ping timeout"));
             this.socketPing.start();
         });
 
@@ -87,7 +87,7 @@ export default class Chat {
         });
     }
 
-    public leaveChat(reason: string): void {
+    private doLeaveChat(reason: string): void {
         Logger.error(`Leaving chat, reason: ${reason}`);
         this.socketPing?.stop();
         this.socketPing = null;
@@ -160,7 +160,7 @@ export default class Chat {
         // this.socket?.disconnect();
         this.socket = null;
         this.peerPing = new PeerPing(this.dataChannel as EventDataChannel,
-            () => this.reenterChat("peer ping timeout"));
+            () => this.leaveChat("peer ping timeout"));
         this.peerPing.start();
     }
 
@@ -177,7 +177,7 @@ export default class Chat {
         });
 
         this.dataChannel?.addEventListener("close", () => {
-            this.reenterChat("data channel closed");
+            this.leaveChat("data channel closed");
         });
 
         this.dataChannel?.addEventListener("chatMessage", (event) => {
@@ -185,9 +185,10 @@ export default class Chat {
         });
     }
 
-    private reenterChat(reason: string): void {
-        this.leaveChat(reason);
-        this.enterChat();
+    private leaveChat(reason: string): void {
+        this.doLeaveChat(reason);
+        this.dispatchEvent(new MessageEvent("leave"));
+        // this.enterChat();
     }
 
     private removeSocketListeners() {
