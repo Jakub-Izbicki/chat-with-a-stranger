@@ -93,6 +93,7 @@ export default class Chat {
         this.signalingPing = null;
         this.peerPing?.stop();
         this.peerPing = null;
+        this.removeSocketListeners();
         this.socket?.disconnect();
         this.socket = null;
         this.peerConnection?.close();
@@ -154,6 +155,7 @@ export default class Chat {
         this.state = ChatState.READY_TO_CHAT;
         (this.signalingPing as SocketPing).stop();
         this.signalingPing = null;
+        this.removeSocketListeners();
         // todo: think of some way to correctly disconnect when signaling channel no longer needed
         // this.socket?.disconnect();
         this.socket = null;
@@ -186,5 +188,25 @@ export default class Chat {
     private reenterChat(reason: string): void {
         this.leaveChat(reason);
         this.enterChat();
+    }
+
+    private removeSocketListeners() {
+        this.socketListenerOff(Chat.CONNECT);
+        this.socketListenerOff(Chat.DISCONNECT);
+        this.socketListenerOff(Chat.MATCH);
+        this.socketListenerOff(Chat.OFFER_REQUEST);
+        this.socketListenerOff(Chat.OFFER);
+        this.socketListenerOff(Chat.ANSWER);
+        this.socketListenerOff(Chat.ICECANDIDATE);
+    }
+
+    private socketListenerOff(event: string): void {
+        if (!this.socket) {
+            return;
+        }
+
+        this.socket.listeners(event).forEach(listener => {
+            this.socket?.off(event, listener);
+        });
     }
 }
