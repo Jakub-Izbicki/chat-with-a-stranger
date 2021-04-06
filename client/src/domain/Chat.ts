@@ -156,7 +156,7 @@ export default class Chat {
         (this.signalingPing as SocketPing).stop();
         this.signalingPing = null;
         this.removeSocketListeners();
-        // todo: think of some way to correctly disconnect when signaling channel no longer needed
+        // todo: think of some way to correctly disconnect when signaling channel is no longer needed
         // this.socket?.disconnect();
         this.socket = null;
         this.peerPing = new PeerPing(this.dataChannel as EventDataChannel,

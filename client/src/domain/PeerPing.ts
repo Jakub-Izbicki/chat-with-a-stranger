@@ -1,5 +1,6 @@
 import SocketPing from "@/domain/SocketPing";
 import EventDataChannel from "@/domain/EventDataChannel";
+import Logger from "@/domain/Logger";
 
 export default class PeerPing extends SocketPing {
 
@@ -24,7 +25,9 @@ export default class PeerPing extends SocketPing {
 
     protected addListeners() {
         this.dataChannel.addEventListener("peerPingRequest", (event) => {
-            this.dataChannel.send(PeerPing.PING_RESPONSE_TAG + this.extractPingToken((event as MessageEvent).data));
+            const token = this.extractPingToken((event as MessageEvent).data);
+            Logger.info(`<<< Received ${this.getPingName()} ping request: ${token}`);
+            this.dataChannel.send(PeerPing.PING_RESPONSE_TAG + token);
         });
 
         this.dataChannel.addEventListener("peerPingResponse", (event) => {
