@@ -28,7 +28,7 @@ export default class Chat {
 
     private dataChannel: EventDataChannel | null = null;
 
-    private signalingPing: SocketPing | null = null;
+    private socketPing: SocketPing | null = null;
 
     private peerPing: PeerPing | null = null;
 
@@ -52,8 +52,8 @@ export default class Chat {
             Logger.success(`Matched with id: ${matchId}`);
             this.state = ChatState.SIGNALING;
 
-            this.signalingPing = new SocketPing(this.socket as Socket, () => this.reenterChat("socket ping timeout"));
-            this.signalingPing.start();
+            this.socketPing = new SocketPing(this.socket as Socket, () => this.reenterChat("socket ping timeout"));
+            this.socketPing.start();
         });
 
         this.socket?.on(Chat.OFFER_REQUEST, async () => {
@@ -89,8 +89,8 @@ export default class Chat {
 
     public leaveChat(reason: string): void {
         Logger.error(`Leaving chat, reason: ${reason}`);
-        this.signalingPing?.stop();
-        this.signalingPing = null;
+        this.socketPing?.stop();
+        this.socketPing = null;
         this.peerPing?.stop();
         this.peerPing = null;
         this.removeSocketListeners();
@@ -153,8 +153,8 @@ export default class Chat {
     private onReadyToChat() {
         Logger.success("Ready to chat");
         this.state = ChatState.READY_TO_CHAT;
-        (this.signalingPing as SocketPing).stop();
-        this.signalingPing = null;
+        (this.socketPing as SocketPing).stop();
+        this.socketPing = null;
         this.removeSocketListeners();
         // todo: think of some way to correctly disconnect when signaling channel is no longer needed
         // this.socket?.disconnect();

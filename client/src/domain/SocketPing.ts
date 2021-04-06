@@ -1,6 +1,7 @@
 import {v4 as uuid4} from "uuid";
 import {Socket} from "socket.io-client";
 import Logger from "@/domain/Logger";
+import moment, {Moment} from "moment";
 
 export default class SocketPing {
 
@@ -9,6 +10,8 @@ export default class SocketPing {
     private readonly PING_INTERVAL = 500;
 
     protected pingToken: string | null = null;
+
+    protected pingTime: Moment | null = null;
 
     private pingTimeout: number | null = null;
 
@@ -28,7 +31,6 @@ export default class SocketPing {
 
     protected addListeners() {
         this.socket?.on("signalingPingRequest", (token: string) => {
-            Logger.info(`<<< Received ${this.getPingName()} ping request: ${token}`);
             this.socket?.emit("signalingPingResponse", token);
         });
 
@@ -44,10 +46,14 @@ export default class SocketPing {
     }
 
     protected resetPing(token: string): void {
-        Logger.info(`<<< Received ${this.getPingName()} ping response: ${token}`);
+        Logger.info(
+            `Got ${this.getPingName()} ping response: ${token}, after ${moment().diff(this.pingTime, "milliseconds")}ms`);
+
         if (this.pingToken === token) {
             clearTimeout(this.pingTimeout as number);
             this.pingInterval = setTimeout(() => this.sendPing(), this.PING_INTERVAL);
+            this.pingToken = null;
+            this.pingTime = null;
         }
     }
 
@@ -57,7 +63,7 @@ export default class SocketPing {
         }
 
         this.pingToken = uuid4();
-        Logger.info(`>>> Sending ${this.getPingName()} ping request: ${this.pingToken}`);
+        this.pingTime = moment();
         this.emitPing();
 
         this.pingTimeout = setTimeout(() => this.timeoutCallback(), this.PING_TIMEOUT);
